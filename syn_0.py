@@ -7,9 +7,29 @@ Created on Thu Aug 16 21:27:06 2018
 
 
 import pandas as pd
-import time
+#import time
 import datetime
 import csv
+#import numpy as np
+#from sklearn.model_selection import train_test_split
+#from sklearn.ensemble import RandomForestClassifier
+#from sklearn.metrics import classification_report
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import GridSearchCV
+
+#from sklearn.metrics import accuracy_score
+
+from sklearn import preprocessing
+from sklearn import ensemble
+from sklearn.model_selection import StratifiedShuffleSplit
+
+from sklearn.linear_model import SGDClassifier, LogisticRegression, LogisticRegressionCV
+from sklearn.naive_bayes import GaussianNB, BernoulliNB
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC, LinearSVR, NuSVC, LinearSVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 
 FILE_NAME = 'train_ds.csv'
 FILE_PATH = 'Data/'
@@ -395,7 +415,239 @@ def get_normal_mcc(mcc):
                 break
     else:
         return 'no mcc'
+
+
+#def process_data(df):
+#    res_list = list()
+#    id_list = dict(df.clientid.value_counts())
+#    for client_id in id_list:
+#        temp = df.loc[df['clientid'] == client_id]
+#        res_list.append(temp)
+#    return res_list
+
+
+def process_data(df):
+    res_list = list()
+    id_list = dict(df.clientid.value_counts())
+    for client_id in id_list:
+        temp = df.loc[df['clientid'] == client_id]
+        year_list = dict(df.year.value_counts())
+        for year in year_list:
+            temp_year = temp.loc[temp['year'] == year]
+            if not temp_year.empty:
+                month_list = dict(temp_year.month.value_counts())
+                for month in month_list:
+                    temp_month = temp_year.loc[temp_year['month'] == month]
+                    if not temp_month.empty:
+                        res_list.append(temp_month)
+    return res_list
+
+
+def frame_template(hour_list, 
+                   day_list, 
+                   month_list, 
+                   cities_list, 
+                   countries_list, 
+                   mcc_list, 
+                   average_month, 
+                   average_day,
+                   average_hour,
+                   average_country,
+                   average_mcc,
+                   std_mcc,
+                   std_day,
+                   std_month,
+                   size):
+    res_df = pd.DataFrame(index=range(size), columns = (
+            hour_list
+            + 
+            day_list
+            + 
+            month_list
+            + 
+            cities_list
+            +
+            countries_list
+            +
+            mcc_list
+            +
+            average_month
+            +
+            average_day
+            +
+            average_hour
+            +
+            average_country
+            +
+            average_mcc
+            +
+            std_mcc
+            +
+            std_day
+            +
+            std_month
+            +
+            ['sexid']))    
+    return res_df
+
+
+######
+######
     
+def random_forest_tuning(X_train, y_train):
+    
+    param_grid = [
+        {'n_estimators':[640, 660, 680, 700, 1000],
+        'max_depth':[1, 2, 3, 4, 5, 10, 20],
+        'bootstrap':[True, False],
+        'max_features':['auto', 'sqrt'],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4]
+        }
+    ]
+    
+    forest_class = ensemble.RandomForestClassifier()
+    
+    grid_search = GridSearchCV(forest_class, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, verbose=2)
+    
+    grid_search.fit(X_train, y_train)
+    
+    forest_cls = grid_search.best_estimator_
+    
+    print('RandomForest best params', '\n', grid_search.best_params_)
+    print('RandomForest best score', '\n', grid_search.best_score_)
+    
+#    forest_cv_res = grid_search.cv_results_
+    
+#    for mean_score, params in zip(forest_cv_res['mean_test_score'], forest_cv_res['params']):
+#        print(mean_score, params)
+    
+    return forest_cls
+
+
+def draft_classifiers_evaluation(df_res, y):
+
+    classifiers = [
+    LinearSVC(),
+    LinearSVR(C=0.01, max_iter=2000, dual=False, loss='squared_epsilon_insensitive'),
+#    KNeighborsClassifier(3),
+    SVC(probability=True),
+    NuSVC(),
+    DecisionTreeClassifier(),
+    ensemble.RandomForestClassifier(n_estimators=680),
+    ensemble.AdaBoostClassifier(),
+    ensemble.GradientBoostingClassifier(),
+    BernoulliNB(),
+    LinearDiscriminantAnalysis(),
+#    QuadraticDiscriminantAnalysis(),
+    LogisticRegression(),
+    MLPClassifier(hidden_layer_sizes=(110, ), max_iter=800),
+    SGDClassifier(loss='log', max_iter=800),
+    LogisticRegressionCV(max_iter=800)]
+
+    log_cols = ["Classifier", "ROC_AUC score"]
+    log = pd.DataFrame(columns=log_cols)
+
+    sss = StratifiedShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
+
+    acc_dict = {}
+
+    for train_index, test_index in sss.split(df_res, y):
+        X_train, X_test = df_res.iloc[train_index], df_res.iloc[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        for clf in classifiers:
+            name = clf.__class__.__name__
+            clf.fit(X_train, y_train)
+            train_predictions = clf.predict(X_test)
+            acc = roc_auc_score(y_test, train_predictions)
+
+
+            if name in acc_dict:
+                acc_dict[name] += acc
+            else:
+                acc_dict[name] = acc
+
+    for clf in acc_dict:
+        acc_dict[clf] = acc_dict[clf] / 10.0
+        log_entry = pd.DataFrame([[clf, acc_dict[clf]]], columns=log_cols)
+        log = log.append(log_entry)
+
+#    print(acc_dict)
+    print(log)
+    pass
+
+
+def classifiers_evaluation(df_res, y):
+
+    classifiers = [
+    LinearSVC(),
+    LinearSVR(C=0.01, max_iter=2000, dual=False, loss='squared_epsilon_insensitive'),
+#    KNeighborsClassifier(3),
+    SVC(probability=True),
+    NuSVC(),
+    DecisionTreeClassifier(),
+    ensemble.RandomForestClassifier(n_estimators=680),
+    ensemble.AdaBoostClassifier(),
+    ensemble.GradientBoostingClassifier(),
+    BernoulliNB(),
+    LinearDiscriminantAnalysis(),
+#    QuadraticDiscriminantAnalysis(),
+    LogisticRegression(),
+    MLPClassifier(hidden_layer_sizes=(110, ), max_iter=800),
+    SGDClassifier(loss='log', max_iter=800),
+    LogisticRegressionCV(max_iter=800)]
+
+    log_cols = ["Classifier", "ROC_AUC score"]
+    log = pd.DataFrame(columns=log_cols)
+
+    quantile = preprocessing.QuantileTransformer(n_quantiles=2500)
+    X = quantile.fit_transform(df_res)
+    
+#    minmax = preprocessing.MinMaxScaler()
+#    X = minmax.fit_transform(df_res)
+    
+#    norm = preprocessing.Normalizer()
+#    X = norm.fit_transform(df_res) 
+
+#    standart = preprocessing.StandardScaler()
+#    X = standart.fit_transform(df_res)
+    
+#    robust = preprocessing.RobustScaler()
+#    X = robust.fit_transform(df_res)  
+    
+#    maxabs = preprocessing.MaxAbsScaler()
+#    X = maxabs.fit_transform(df_res)    
+
+    sss = StratifiedShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
+
+    acc_dict = {}
+
+    for train_index, test_index in sss.split(X, y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        for clf in classifiers:
+            name = clf.__class__.__name__
+            clf.fit(X_train, y_train)
+            train_predictions = clf.predict(X_test)
+#            acc = accuracy_score(y_test, train_predictions)
+            acc = roc_auc_score(y_test, train_predictions)
+
+
+            if name in acc_dict:
+                acc_dict[name] += acc
+            else:
+                acc_dict[name] = acc
+
+    for clf in acc_dict:
+        acc_dict[clf] = acc_dict[clf] / 10.0
+        log_entry = pd.DataFrame([[clf, acc_dict[clf]]], columns=log_cols)
+        log = log.append(log_entry)
+
+#    print(acc_dict)
+    print(log)
+
 
 if __name__ == '__main__':
     df_train, df_test = get_categorical_data()
@@ -428,8 +680,151 @@ if __name__ == '__main__':
 
     mcc_res_dict = get_mcc_coding_dict(mcc_coding_list)
     
+    mcc_res_dict = {f'{k}_mcc': v for k, v in mcc_res_dict.items()}
+    
     df_train['mcc'] = df_train['mcc'].apply(lambda x: get_normal_mcc(x))
     df_test['mcc'] = df_test['mcc'].apply(lambda x: get_normal_mcc(x))
+    
+    hour_list = list(df_train.hour.unique())
+    day_list = list(df_train.day.unique())
+    month_list = list(df_train.month.unique())
+    cities_list = list(set(list(df_train.city.unique()) + list(df_test.city.unique())))
+    countries_list = list(set(list(df_train.country.unique()) + list(df_test.country.unique())))
+    mcc_list = list(set(list(df_train.mcc.unique()) + list(df_test.mcc.unique())))
+    average_month = [f'{k}_avg' for k in month_list]
+    average_day = [f'{k}_avg' for k in day_list]
+    average_hour = [f'{k}_avg' for k in hour_list]
+    average_country = [f'{k}_avg' for k in countries_list]
+    average_mcc = [f'{k}_avg' for k in mcc_list]
+    std_mcc = [f'{k}_std' for k in mcc_list]
+    std_day = [f'{k}_std' for k in day_list]
+    std_month = [f'{k}_std' for k in month_list]
+        
+    train_list = process_data(df_train)
+    test_list = process_data(df_test)
+    
+    train_data = frame_template(
+            hour_list,
+            day_list,
+            month_list,
+            cities_list,
+            countries_list,
+            mcc_list,
+            average_month,
+            average_day,
+            average_hour,
+            average_country,
+            average_mcc,
+            std_mcc,
+            std_day,
+            std_month,
+            len(train_list)
+            )
+    
+    for I in range(0,len(train_list)):
+        
+        for key in list(dict(train_list[I].city.value_counts()).keys()):
+            train_data[key][I] = dict(train_list[I].city.value_counts())[key]
+            
+        for key in list(dict(train_list[I].country.value_counts()).keys()):
+            train_data[key][I] = dict(train_list[I].country.value_counts())[key]
+            
+        for key in list(dict(train_list[I].day.value_counts()).keys()):
+            train_data[key][I] = dict(train_list[I].day.value_counts())[key]
+            
+        for key in list(dict(train_list[I].hour.value_counts()).keys()):
+            train_data[key][I] = dict(train_list[I].hour.value_counts())[key]
+            
+        for key in list(dict(train_list[I].month.value_counts()).keys()):
+            train_data[key][I] = dict(train_list[I].month.value_counts())[key]
+            
+        for key in list(dict(train_list[I].mcc.value_counts()).keys()):
+            train_data[key][I] = dict(train_list[I].mcc.value_counts())[key]
+            
+        for key in list(dict(train_list[I].month.value_counts()).keys()):
+            train_data[key + '_avg'][I] = train_list[I][train_list[I]['month'] == key]['amount'].mean() // 100
+
+        for key in list(dict(train_list[I].day.value_counts()).keys()):
+            train_data[key + '_avg'][I] = train_list[I][train_list[I]['day'] == key]['amount'].mean() // 100
+
+        for key in list(dict(train_list[I].hour.value_counts()).keys()):
+            train_data[key + '_avg'][I] = train_list[I][train_list[I]['hour'] == key]['amount'].mean() // 100
+            
+        for key in list(dict(train_list[I].country.value_counts()).keys()):
+            train_data[key + '_avg'][I] = train_list[I][train_list[I]['country'] == key]['amount'].mean() // 100
+
+        for key in list(dict(train_list[I].mcc.value_counts()).keys()):
+            train_data[key + '_avg'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].mean() // 100
+            
+        for key in list(dict(train_list[I].mcc.value_counts()).keys()):
+            train_data[key + '_std'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].std() // 100
+            
+        for key in list(dict(train_list[I].day.value_counts()).keys()):
+            train_data[key + '_std'][I] = train_list[I][train_list[I]['day'] == key]['amount'].std() // 100
+
+        for key in list(dict(train_list[I].month.value_counts()).keys()):
+            train_data[key + '_std'][I] = train_list[I][train_list[I]['month'] == key]['amount'].std() // 100
+
+
+        train_data['sexid'][I] = train_list[I].sexid.unique()[0]
+        
+    train_data.fillna(0, inplace=True)
+    
+    y_train = train_data['sexid']
+    X_train = train_data.drop('sexid', axis=1)
+#    X_train.drop(hour_list, axis=1, inplace=True)
+#    X_train.drop(day_list, axis=1, inplace=True)
+#    X_train.drop(month_list, axis=1, inplace=True)
+#    X_train.drop(cities_list, axis=1, inplace=True)
+#    X_train.drop(countries_list, axis=1, inplace=True)
+#    X_train.drop(mcc_list, axis=1, inplace=True)
+    
+    classifiers_evaluation(X_train, y_train)
+    print('\n', 'Clear evaluation without data preprocessing', '\n')
+    draft_classifiers_evaluation(X_train, y_train)
+    
+#    X_train, X_test, y_train, y_test  =  train_test_split(
+#                                            X_train,
+#                                            y_train,
+#                                            test_size = 0.25,
+#                                            random_state=42
+#                                            )
+#        
+#    model_0 = RandomForestClassifier(n_estimators=700, n_jobs=-1)
+#    model_0.fit(X_train, y_train)
+#    y_pred_forest_short = model_0.predict(X_test)
+#    print(classification_report(y_test, y_pred_forest_short))
+#    print(roc_auc_score(y_test, y_pred_forest_short))    
+
+#    param_grid = [
+#        {'n_estimators':[640, 660, 680, 700, 1000],
+#        'max_depth':[1, 2, 3, 4, 5, 10, 20],
+#        'bootstrap':[True, False],
+#        'max_features':['auto', 'sqrt'],
+#        'min_samples_split': [2, 5, 10],
+#        'min_samples_leaf': [1, 2, 4]
+#        }
+#    ]
+#    
+#    forest_class = ensemble.RandomForestClassifier()
+#    
+#    grid_search = GridSearchCV(forest_class, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, verbose=2)
+#    
+#    grid_search.fit(X_train, y_train)
+#    
+#    forest_cls = grid_search.best_estimator_
+#    
+#    print('RandomForest best params', '\n', grid_search.best_params_)
+#    
+#    forest_cv_res = grid_search.cv_results_
+#    
+#    for mean_score, params in zip(forest_cv_res['mean_test_score'], forest_cv_res['params']):
+#        print(mean_score, params)
+
+
+    
+#    del df_train
+#    del df_test
     
 #    df_cat['week_day'] = df_cat['trandatetime'].apply(lambda x: get_day(x))
 #    df_cat['month'] = df_cat['trandatetime'].apply(lambda x: get_month(x))
