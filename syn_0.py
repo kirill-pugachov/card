@@ -457,6 +457,10 @@ def frame_template(hour_list,
                    std_mcc,
                    std_day,
                    std_month,
+                   std_hour,
+                   mean_day,
+                   mean_month,
+                   mean_mcc,
                    size):
     res_df = pd.DataFrame(index=range(size), columns = (
             hour_list
@@ -486,6 +490,14 @@ def frame_template(hour_list,
             std_day
             +
             std_month
+            +
+            std_hour
+            +
+            mean_day
+            +
+            mean_month
+            +
+            mean_mcc
             +
             ['sexid']))    
     return res_df
@@ -528,7 +540,7 @@ def random_forest_tuning(X_train, y_train):
 def draft_classifiers_evaluation(df_res, y):
 
     classifiers = [
-    LinearSVC(),
+    LinearSVC(max_iter=2000),
     LinearSVR(C=0.01, max_iter=2000, dual=False, loss='squared_epsilon_insensitive'),
 #    KNeighborsClassifier(3),
     SVC(probability=True),
@@ -581,7 +593,7 @@ def draft_classifiers_evaluation(df_res, y):
 def classifiers_evaluation(df_res, y):
 
     classifiers = [
-    LinearSVC(),
+    LinearSVC(max_iter=2000),
     LinearSVR(C=0.01, max_iter=2000, dual=False, loss='squared_epsilon_insensitive'),
 #    KNeighborsClassifier(3),
     SVC(probability=True),
@@ -699,6 +711,10 @@ if __name__ == '__main__':
     std_mcc = [f'{k}_std' for k in mcc_list]
     std_day = [f'{k}_std' for k in day_list]
     std_month = [f'{k}_std' for k in month_list]
+    std_hour = [f'{k}_std' for k in hour_list]
+    mean_day = [f'{k}_mean' for k in day_list]
+    mean_month = [f'{k}_mean' for k in month_list]
+    mean_mcc = [f'{k}_mean' for k in mcc_list]
         
     train_list = process_data(df_train)
     test_list = process_data(df_test)
@@ -718,6 +734,10 @@ if __name__ == '__main__':
             std_mcc,
             std_day,
             std_month,
+            std_hour,
+            mean_day,
+            mean_month,
+            mean_mcc,
             len(train_list)
             )
     
@@ -764,7 +784,18 @@ if __name__ == '__main__':
 
         for key in list(dict(train_list[I].month.value_counts()).keys()):
             train_data[key + '_std'][I] = train_list[I][train_list[I]['month'] == key]['amount'].std() // 100
+            
+        for key in list(dict(train_list[I].hour.value_counts()).keys()):
+            train_data[key + '_std'][I] = train_list[I][train_list[I]['hour'] == key]['amount'].std() // 100
 
+        for key in list(dict(train_list[I].day.value_counts()).keys()):
+            train_data[key + '_mean'][I] = train_list[I][train_list[I]['day'] == key]['amount'].median() // 100
+            
+        for key in list(dict(train_list[I].month.value_counts()).keys()):
+            train_data[key + '_mean'][I] = train_list[I][train_list[I]['month'] == key]['amount'].median() // 100
+            
+        for key in list(dict(train_list[I].mcc.value_counts()).keys()):
+            train_data[key + '_mean'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].median() // 100
 
         train_data['sexid'][I] = train_list[I].sexid.unique()[0]
         
