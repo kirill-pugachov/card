@@ -32,7 +32,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 
 FILE_NAME = 'train_ds.csv'
-FILE_PATH = 'Data/'
+FILE_PATH = 'C:\\Users\\tom\\card_garbage\\Data\\'
 TEST_FILE_NAME = 'test_ds.csv'
 CITIES_FILE_NAME = 'cities_list.csv'
 
@@ -458,9 +458,22 @@ def frame_template(hour_list,
                    std_day,
                    std_month,
                    std_hour,
+                   std_country,
                    mean_day,
                    mean_month,
                    mean_mcc,
+                   mean_hour,
+                   mean_country,
+                   var_day,
+                   var_month,
+                   var_mcc,
+                   var_hour,
+                   var_country,
+                   max_day,
+                   max_month,
+                   max_mcc,
+                   max_hour,
+                   max_country,
                    size):
     res_df = pd.DataFrame(index=range(size), columns = (
             hour_list
@@ -493,11 +506,37 @@ def frame_template(hour_list,
             +
             std_hour
             +
+            std_country
+            +
             mean_day
             +
             mean_month
             +
             mean_mcc
+            +
+            mean_hour
+            +
+            mean_country
+            +
+            var_day
+            +
+            var_month
+            +
+            var_mcc
+            +
+            var_hour
+            +
+            var_country
+            +
+            max_day
+            +
+            max_month
+            +
+            max_mcc
+            +
+            max_hour
+            +
+            max_country
             +
             ['sexid']))    
     return res_df
@@ -537,6 +576,35 @@ def random_forest_tuning(X_train, y_train):
     return forest_cls
 
 
+def linear_SVC_tuning(X_train, y_train):
+
+    param_grid = [
+        {'class_weight':[None, 'balanced'],
+        'fit_intercept':[False, True],
+        'dual':[True, False],
+        'max_iter': [1000, 2000, 5000, 10000],
+        'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000],
+        'loss':['hinge','squared_hinge']
+        }
+    ]
+    
+    lin_class = LinearSVC()
+    
+    grid_search = GridSearchCV(lin_class, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, verbose=2)
+    
+    grid_search.fit(X_train, y_train)
+    
+    lin_cls = grid_search.best_estimator_
+    
+    print('linearSVC best params', '\n', grid_search.best_params_)
+    print('linear_SVC best score', '\n', grid_search.best_score_)
+    
+    return lin_cls
+
+
+
+###
+###
 def draft_classifiers_evaluation(df_res, y):
 
     classifiers = [
@@ -549,11 +617,11 @@ def draft_classifiers_evaluation(df_res, y):
     ensemble.RandomForestClassifier(n_estimators=680),
     ensemble.AdaBoostClassifier(),
     ensemble.GradientBoostingClassifier(),
-    BernoulliNB(),
+#    BernoulliNB(),
     LinearDiscriminantAnalysis(),
 #    QuadraticDiscriminantAnalysis(),
     LogisticRegression(),
-    MLPClassifier(hidden_layer_sizes=(110, ), max_iter=800),
+#    MLPClassifier(hidden_layer_sizes=(110, ), max_iter=800),
     SGDClassifier(loss='log', max_iter=800),
     LogisticRegressionCV(max_iter=800)]
 
@@ -598,15 +666,15 @@ def classifiers_evaluation(df_res, y):
 #    KNeighborsClassifier(3),
     SVC(probability=True),
     NuSVC(),
-    DecisionTreeClassifier(),
+#    DecisionTreeClassifier(),
     ensemble.RandomForestClassifier(n_estimators=680),
     ensemble.AdaBoostClassifier(),
     ensemble.GradientBoostingClassifier(),
-    BernoulliNB(),
+#    BernoulliNB(),
     LinearDiscriminantAnalysis(),
 #    QuadraticDiscriminantAnalysis(),
     LogisticRegression(),
-    MLPClassifier(hidden_layer_sizes=(110, ), max_iter=800),
+#    MLPClassifier(hidden_layer_sizes=(110, ), max_iter=800),
     SGDClassifier(loss='log', max_iter=800),
     LogisticRegressionCV(max_iter=800)]
 
@@ -712,9 +780,22 @@ if __name__ == '__main__':
     std_day = [f'{k}_std' for k in day_list]
     std_month = [f'{k}_std' for k in month_list]
     std_hour = [f'{k}_std' for k in hour_list]
+    std_country = [f'{k}_std' for k in countries_list]
     mean_day = [f'{k}_mean' for k in day_list]
     mean_month = [f'{k}_mean' for k in month_list]
     mean_mcc = [f'{k}_mean' for k in mcc_list]
+    mean_hour = [f'{k}_mean' for k in hour_list]
+    mean_country = [f'{k}_mean' for k in countries_list]
+    var_day = [f'{k}_var' for k in day_list]
+    var_month = [f'{k}_var' for k in month_list]
+    var_mcc = [f'{k}_var' for k in mcc_list]
+    var_hour = [f'{k}_var' for k in hour_list]
+    var_country = [f'{k}_var' for k in countries_list]
+    max_day = [f'{k}_max' for k in day_list]
+    max_month = [f'{k}_max' for k in month_list]
+    max_mcc = [f'{k}_max' for k in mcc_list]
+    max_hour = [f'{k}_max' for k in hour_list]
+    max_country = [f'{k}_max' for k in countries_list]
         
     train_list = process_data(df_train)
     test_list = process_data(df_test)
@@ -735,9 +816,22 @@ if __name__ == '__main__':
             std_day,
             std_month,
             std_hour,
+            std_country,
             mean_day,
             mean_month,
             mean_mcc,
+            mean_hour,
+            mean_country,
+            var_day,
+            var_month,
+            var_mcc,
+            var_hour,
+            var_country,
+            max_day,
+            max_month,
+            max_mcc,
+            max_hour,
+            max_country,
             len(train_list)
             )
     
@@ -760,7 +854,7 @@ if __name__ == '__main__':
             
         for key in list(dict(train_list[I].mcc.value_counts()).keys()):
             train_data[key][I] = dict(train_list[I].mcc.value_counts())[key]
-            
+#mean
         for key in list(dict(train_list[I].month.value_counts()).keys()):
             train_data[key + '_avg'][I] = train_list[I][train_list[I]['month'] == key]['amount'].mean() // 100
 
@@ -775,7 +869,7 @@ if __name__ == '__main__':
 
         for key in list(dict(train_list[I].mcc.value_counts()).keys()):
             train_data[key + '_avg'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].mean() // 100
-            
+#std
         for key in list(dict(train_list[I].mcc.value_counts()).keys()):
             train_data[key + '_std'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].std() // 100
             
@@ -787,7 +881,10 @@ if __name__ == '__main__':
             
         for key in list(dict(train_list[I].hour.value_counts()).keys()):
             train_data[key + '_std'][I] = train_list[I][train_list[I]['hour'] == key]['amount'].std() // 100
-
+            
+        for key in list(dict(train_list[I].country.value_counts()).keys()):
+            train_data[key + '_std'][I] = train_list[I][train_list[I]['country'] == key]['amount'].std() // 100
+#median
         for key in list(dict(train_list[I].day.value_counts()).keys()):
             train_data[key + '_mean'][I] = train_list[I][train_list[I]['day'] == key]['amount'].median() // 100
             
@@ -796,20 +893,58 @@ if __name__ == '__main__':
             
         for key in list(dict(train_list[I].mcc.value_counts()).keys()):
             train_data[key + '_mean'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].median() // 100
-
+            
+        for key in list(dict(train_list[I].hour.value_counts()).keys()):
+            train_data[key + '_mean'][I] = train_list[I][train_list[I]['hour'] == key]['amount'].median() // 100
+            
+        for key in list(dict(train_list[I].country.value_counts()).keys()):
+            train_data[key + '_mean'][I] = train_list[I][train_list[I]['country'] == key]['amount'].median() // 100        
+#variance
+        for key in list(dict(train_list[I].day.value_counts()).keys()):
+            train_data[key + '_var'][I] = train_list[I][train_list[I]['day'] == key]['amount'].var() // 100
+            
+        for key in list(dict(train_list[I].month.value_counts()).keys()):
+            train_data[key + '_var'][I] = train_list[I][train_list[I]['month'] == key]['amount'].var() // 100
+            
+        for key in list(dict(train_list[I].mcc.value_counts()).keys()):
+            train_data[key + '_var'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].var() // 100
+            
+        for key in list(dict(train_list[I].hour.value_counts()).keys()):
+            train_data[key + '_var'][I] = train_list[I][train_list[I]['hour'] == key]['amount'].var() // 100
+            
+        for key in list(dict(train_list[I].country.value_counts()).keys()):
+            train_data[key + '_var'][I] = train_list[I][train_list[I]['country'] == key]['amount'].var() // 100 
+#max
+        for key in list(dict(train_list[I].day.value_counts()).keys()):
+            train_data[key + '_max'][I] = train_list[I][train_list[I]['day'] == key]['amount'].max() // 100
+            
+        for key in list(dict(train_list[I].month.value_counts()).keys()):
+            train_data[key + '_max'][I] = train_list[I][train_list[I]['month'] == key]['amount'].max() // 100
+            
+        for key in list(dict(train_list[I].mcc.value_counts()).keys()):
+            train_data[key + '_max'][I] = train_list[I][train_list[I]['mcc'] == key]['amount'].max() // 100
+            
+        for key in list(dict(train_list[I].hour.value_counts()).keys()):
+            train_data[key + '_max'][I] = train_list[I][train_list[I]['hour'] == key]['amount'].max() // 100
+            
+        for key in list(dict(train_list[I].country.value_counts()).keys()):
+            train_data[key + '_max'][I] = train_list[I][train_list[I]['country'] == key]['amount'].max() // 100 
+            
         train_data['sexid'][I] = train_list[I].sexid.unique()[0]
         
     train_data.fillna(0, inplace=True)
     
     y_train = train_data['sexid']
     X_train = train_data.drop('sexid', axis=1)
-#    X_train.drop(hour_list, axis=1, inplace=True)
-#    X_train.drop(day_list, axis=1, inplace=True)
-#    X_train.drop(month_list, axis=1, inplace=True)
-#    X_train.drop(cities_list, axis=1, inplace=True)
-#    X_train.drop(countries_list, axis=1, inplace=True)
-#    X_train.drop(mcc_list, axis=1, inplace=True)
-    
+
+
+    rand_for = random_forest_tuning(X_train, y_train)
+    lin_svc = linear_SVC_tuning(X_train, y_train)
+
+
+### оценка классификаторв с преобработкой данных и без
+######
+######
     classifiers_evaluation(X_train, y_train)
     print('\n', 'Clear evaluation without data preprocessing', '\n')
     draft_classifiers_evaluation(X_train, y_train)
@@ -851,28 +986,9 @@ if __name__ == '__main__':
 #    
 #    for mean_score, params in zip(forest_cv_res['mean_test_score'], forest_cv_res['params']):
 #        print(mean_score, params)
-
-
-    
-#    del df_train
-#    del df_test
-    
-#    df_cat['week_day'] = df_cat['trandatetime'].apply(lambda x: get_day(x))
-#    df_cat['month'] = df_cat['trandatetime'].apply(lambda x: get_month(x))
-#    df_cat['year'] = df_cat['trandatetime'].apply(lambda x: get_year(x))
-
-
-
-
-
-#    dtrain = get_train_data(FILE_NAME, FILE_PATH)
-#    dtest = get_train_data(TEST_FILE_NAME, FILE_PATH)
-#
-#    dtrain_cat = dtrain.drop(['cgsettlementbufferid', 'clientid', 'sexid', 'amount'], axis=1, inplace=False)
-#    dtest_cat = dtest.drop(['cgsettlementbufferid', 'clientid', 'amount'], axis=1, inplace=False )
-#    train_index = dtrain_cat.index.tolist()
-#    df_cat = dtrain_cat.append(dtest_cat, ignore_index=True)
-#    del dtrain
-#    del dtest
-#    del dtrain_cat
-#    del dtest_cat
+#    X_train.drop(hour_list, axis=1, inplace=True)
+#    X_train.drop(day_list, axis=1, inplace=True)
+#    X_train.drop(month_list, axis=1, inplace=True)
+#    X_train.drop(cities_list, axis=1, inplace=True)
+#    X_train.drop(countries_list, axis=1, inplace=True)
+#    X_train.drop(mcc_list, axis=1, inplace=True)
