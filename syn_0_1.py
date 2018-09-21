@@ -8,15 +8,18 @@ Created on Thu Sep 20 09:52:16 2018
 import pandas as pd
 import itertools
 import copy
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import classification_report
+import datetime
+import csv
+
+#from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
+#from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import GridSearchCV
+
+#from sklearn import preprocessing
 from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn import preprocessing
+
 from sklearn.linear_model import SGDClassifier, LogisticRegression, LogisticRegressionCV
 from sklearn.naive_bayes import GaussianNB, BernoulliNB
 from sklearn.neural_network import MLPClassifier
@@ -25,18 +28,14 @@ from sklearn.svm import SVC, LinearSVR, NuSVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 
-
 FILE_NAME = 'train_ds.csv'
-#FILE_PATH = 'C:\\Users\\tom\\card_garbage\\Data\\'
-FILE_PATH = 'Data/'
+FILE_PATH = 'C:\\Users\\tom\\card_garbage\\Data\\'
 TEST_FILE_NAME = 'test_ds.csv'
 CITIES_FILE_NAME = 'cities_list.csv'
-
 
 def get_train_data(FILE_NAME, FILE_PATH):
     temp = pd.read_csv(FILE_PATH + FILE_NAME)
     return temp
-
 
 def get_categorical_data():
     dtrain = get_train_data(FILE_NAME, FILE_PATH)
@@ -53,6 +52,235 @@ def process_data(df):
     return res_list
 
 
+country_dict = {'GE': ['GE', 'GEGE'],
+ 'MY': ['MY', 'MYMY'],
+ 'AU': ['AU', 'AUAU'],
+ 'CN': ['CN', 'CNCN'],
+ 'KZ': ['KZ', 'KZKZ'],
+ 'MK': ['MK', 'MKMK'],
+ 'CH': ['CH', 'CHCH'],
+ 'EG': ['EG', 'EGEG'],
+ 'NL': ['NL', 'NLNL'],
+ 'DO': ['DO', 'DODO'],
+ 'IT': ['IT', 'ITIT'],
+ 'DE': ['DE', 'DEDE'],
+ 'SE': ['SE', 'SESE'],
+ 'TR': ['TR', 'TRTR'],
+ 'GR': ['GR', 'GRGR'],
+ 'ME': ['ME', 'MEME'],
+ 'SI': ['SI', 'SISI'],
+ 'IN': ['IN', 'ININ'],
+ 'NO': ['NO', 'NONO'],
+ 'RU': ['RU', 'RURU'],
+ 'BY': ['BY', 'BYBY'],
+ 'IE': ['IE', 'IEIE'],
+ 'RO': ['RO', 'RORO'],
+ 'CY': ['CY', 'CYCY'],
+ 'SK': ['SK', 'SKSK'],
+ 'DK': ['DK', 'DKDK'],
+ 'HK': ['HK', 'HKHK'],
+ 'HU': ['HU', 'HUHU'],
+ 'AE': ['AE', 'AEAE'],
+ 'RS': ['RS', 'RSRS'],
+ 'PL': ['PL', 'PLPL'],
+ 'ES': ['ES', 'ESES'],
+ 'LV': ['LV', 'LVLV'],
+ 'MC': ['MC', 'MCMC'],
+ 'GB': ['GB', 'GBGB'],
+ 'IL': ['IL', 'ILIL'],
+ 'CZ': ['CZ', 'CZCZ'],
+ 'MU': ['MU', 'MUMU'],
+ 'BE': ['BE', 'BEBE'],
+ 'AT': ['AT', 'ATAT'],
+ 'FR': ['FR', 'FRFR'],
+ 'PT': ['PT', 'PTPT'],
+ 'HR': ['HR', 'HRHR'],
+ 'AD': ['AD', 'ADAD'],
+ 'GI': ['GI', 'GIGI'],
+ 'BG': ['BG', 'BGBG'],
+ 'MD': ['MD', 'MDMD'],
+ 'LU': ['LU', 'LULU'],
+ 'UA': ['. UA', 'A UA', 'K UA', 'SKUA', 'UAUA', 'UA'],
+ 'US': ['ARUS',
+  'AZUS',
+  'CAUS',
+  'DCUS',
+  'DEUS',
+  'FLUS',
+  'GAUS',
+  'IAUS',
+  'IDUS',
+  'ILUS',
+  'KSUS',
+  'MDUS',
+  'MNUS',
+  'MOUS',
+  'NCUS',
+  'NEUS',
+  'NJUS',
+  'NVUS',
+  'NYUS',
+  'OHUS',
+  'ORUS',
+  'PAUS',
+  'TNUS',
+  'TXUS',
+  'USUS',
+  'UTUS',
+  'WAUS',
+  'WIUS'],
+ 'MT': ['MT', 'MTMT'],
+ 'BR': ['BR', 'BRBR'],
+ 'FI': ['FI', 'FIFI'],
+ 'TH': ['TH', 'THTH'],
+ 'GH': ['GH', 'GHGH'],
+ 'ID': ['ID', 'IDID'],
+ 'CR': ['CR', 'CRCR'],
+ 'CA': ['CA', 'ONCA', 'CACA'],
+ 'SG': ['SG', 'SGSG'],
+ 'NDFCountry': ['',
+  'oCHCH',
+  'EE',
+  'AM',
+  'SN',
+  'LT',
+  'BF',
+  'KW',
+  '™rCHCH',
+  'MGMG',
+  'KN',
+  'BB',
+  'PEPE',
+  'AG',
+  'CW',
+  'lHUHU',
+  'JO',
+  'MV',
+  'AZ',
+  'LK',
+  'PYPY',
+  'JPJP',
+  'VN',
+  'TJ',
+  'ML',
+  'TG',
+  'vHUHU',
+  'PR']}
+ 
+ 
+def get_day(timestamp):
+    day = datetime.datetime.fromtimestamp(timestamp).strftime("%A")
+    return day
+
+
+def get_month(timestamp):
+    month = datetime.datetime.fromtimestamp(timestamp).strftime("%b")
+    return month
+
+
+def get_year(timestamp):
+    year = datetime.datetime.fromtimestamp(timestamp).strftime("%Y")
+    return year
+
+
+def get_hour(timestamp):
+    hour = datetime.datetime.fromtimestamp(timestamp).strftime('%H')
+    return hour
+
+
+def get_country(local):
+    country = local[36:].strip()
+    return country 
+
+
+def get_city(local):
+    city = local[23:36].strip()
+    return city
+
+
+def get_inst(local):
+    inst = local[0:22].strip()
+    return inst
+
+
+def get_normal_country(country):
+    for key in country_dict.keys():
+        if country in country_dict[key]:
+            return key
+
+
+def get_cities_dict(FILE_PATH, CITIES_FILE_NAME):
+    cities_dict = dict()
+    with open(FILE_PATH + '/' + CITIES_FILE_NAME,'r') as data:
+        reader = csv.reader(data)
+        for line in reader:
+            line[:] = [item for item in line if item != '']
+            cities_dict[line[0]] = sorted(list(set(line)))
+    return cities_dict
+
+
+def get_normal_city(city):
+    for key in cities_dict.keys():
+        #print(key, city)
+        for city_d in cities_dict[key]:
+            #print(city, city_d)
+            if city == city_d:              
+                return key
+                break
+    else:
+        return 'no city'
+
+
+def linear_SVC_tuning(X_train, y_train):
+
+    param_grid = [
+        {'class_weight':[None, 'balanced'],
+        'fit_intercept':[False, True],
+        'dual':[True],
+        'max_iter': [1000, 2000, 5000, 10000],
+        'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000],
+        'loss':['hinge','squared_hinge']
+        }
+    ]
+    
+    lin_class = LinearSVC()
+    
+    grid_search = GridSearchCV(lin_class, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, verbose=2)
+    
+    grid_search.fit(X_train, y_train)
+    
+    lin_cls = grid_search.best_estimator_
+    
+    print('linearSVC best params', '\n', grid_search.best_params_)
+    print('linear_SVC best score', '\n', grid_search.best_score_)
+    
+    return lin_cls
+
+
+#def feature_creator(users_list, ccy_tranccy_pairs):
+#    result_dict = dict([(key,{}) for key in ccy_tranccy_pairs])
+#    for user in users_list:
+#        for pair in ccy_tranccy_pairs:
+#            user_selected = user.query('ccy ==' + str(pair[0]) + ' & ' + 'tranccy == ' + str(pair[1]))
+#            for unique_mcc in list(user_selected.mcc.unique()):
+#                sum_by_mcc_user = user_selected[user_selected['mcc'] == unique_mcc]['amount'].sum()
+#                
+#                if sum_by_mcc_user > 0:
+#                
+#                    if unique_mcc in result_dict[pair].keys():
+#                        if user_selected.sexid.unique()[0] == 1:
+#                            result_dict[pair][unique_mcc][1] += sum_by_mcc_user
+#                        else:
+#                            result_dict[pair][unique_mcc][0] += sum_by_mcc_user
+#                    else:
+#                        if user_selected.sexid.unique()[0] == 1:
+#                            result_dict[pair].update({unique_mcc:{1: sum_by_mcc_user, 0:0}})
+#                        else:
+#                            result_dict[pair].update({unique_mcc:{1:0, 0: sum_by_mcc_user}})
+#    res = dict((key,value) for key, value in result_dict.items() if len(result_dict[key]) != 0)
+#    return res
+
+
 def feature_creator(users_list, ccy_tranccy_pairs):
     result_dict = dict([(key,{}) for key in ccy_tranccy_pairs])
     for user in users_list:
@@ -65,19 +293,21 @@ def feature_creator(users_list, ccy_tranccy_pairs):
                 
                     if unique_mcc in result_dict[pair].keys():
                         if user_selected.sexid.unique()[0] == 1:
-                            result_dict[pair][unique_mcc][1] += sum_by_mcc_user
+                            result_dict[pair][unique_mcc][1][0] += sum_by_mcc_user
+                            result_dict[pair][unique_mcc][1][1] += 1
                         else:
-                            result_dict[pair][unique_mcc][0] += sum_by_mcc_user
+                            result_dict[pair][unique_mcc][0][0] += sum_by_mcc_user
+                            result_dict[pair][unique_mcc][0][1] += 1
                     else:
                         if user_selected.sexid.unique()[0] == 1:
-                            result_dict[pair].update({unique_mcc:{1: sum_by_mcc_user, 0:0}})
+                            result_dict[pair].update({unique_mcc:{1: [sum_by_mcc_user, 1], 0:[0,0]}})
                         else:
-                            result_dict[pair].update({unique_mcc:{1:0, 0: sum_by_mcc_user}})
+                            result_dict[pair].update({unique_mcc:{1:[0,0], 0: [sum_by_mcc_user, 1]}})
     res = dict((key,value) for key, value in result_dict.items() if len(result_dict[key]) != 0)
     return res
 
 
-def classifiers_evaluation(df_res, y):
+def draft_classifiers_evaluation(df_res, y):
 
     classifiers = [
     LinearSVC(max_iter=2000),
@@ -101,30 +331,12 @@ def classifiers_evaluation(df_res, y):
     log_cols = ["Classifier", "ROC_AUC score"]
     log = pd.DataFrame(columns=log_cols)
 
-#    quantile = preprocessing.QuantileTransformer(n_quantiles=2500)
-#    X = quantile.fit_transform(df_res)
-    
-#    minmax = preprocessing.MinMaxScaler()
-#    X = minmax.fit_transform(df_res)
-    
-#    norm = preprocessing.Normalizer()
-#    X = norm.fit_transform(df_res) 
-
-#    standart = preprocessing.StandardScaler()
-#    X = standart.fit_transform(df_res)
-    
-#    robust = preprocessing.RobustScaler()
-#    X = robust.fit_transform(df_res)  
-    
-    maxabs = preprocessing.MaxAbsScaler()
-    X = maxabs.fit_transform(df_res)    
-
     sss = StratifiedShuffleSplit(n_splits=10, test_size=0.1, random_state=0)
 
     acc_dict = {}
 
-    for train_index, test_index in sss.split(X, y):
-        X_train, X_test = X[train_index], X[test_index]
+    for train_index, test_index in sss.split(df_res, y):
+        X_train, X_test = df_res.iloc[train_index], df_res.iloc[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
         for clf in classifiers:
@@ -132,6 +344,7 @@ def classifiers_evaluation(df_res, y):
             clf.fit(X_train, y_train)
             train_predictions = clf.predict(X_test)
             acc = roc_auc_score(y_test, train_predictions)
+
 
             if name in acc_dict:
                 acc_dict[name] += acc
@@ -145,7 +358,7 @@ def classifiers_evaluation(df_res, y):
 
 #    print(acc_dict)
     print(log)
-    
+    pass    
 
 if __name__ == '__main__':
     
@@ -157,14 +370,20 @@ if __name__ == '__main__':
     
     result_dict = feature_creator(users_list, ccy_tranccy_pairs)
     
-    sexid_1_list = [(key[0], key[1], key_0, value_0[1]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[0] == 0 and value_0[1] != 0]
+#    sexid_1_list = [(key[0], key[1], key_0, value_0[1]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[0] == 0 and value_0[1] != 0]
+#    
+#    sexid_0_list = [(key[0], key[1], key_0, value_0[0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[0] != 0 and value_0[1] == 0]
+#    
+#    total_columns_list = copy.deepcopy(sexid_1_list)
+#    total_columns_list.extend(sexid_0_list)
     
-    sexid_0_list = [(key[0], key[1], key_0, value_0[0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[0] != 0 and value_0[1] == 0]
+    sexid_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
+    sexid_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]
     
     total_columns_list = copy.deepcopy(sexid_1_list)
     total_columns_list.extend(sexid_0_list)
     
-    columns_list = [str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in total_columns_list]
+    columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in total_columns_list]))
     
     train_data_df = pd.DataFrame(columns=columns_list, index=range(len(users_list)))
     
@@ -174,7 +393,7 @@ if __name__ == '__main__':
         for U in total_columns_list:
             t = users_list[I].query('ccy ==' + str(U[0]) + ' & ' + 'tranccy ==' + str(U[1]))
             if t[t['mcc'] == U[2]]['amount'].sum():
-                print(U[0], U[1], U[2], t[t['mcc'] == U[2]]['amount'].sum())
+#                print(U[0], U[1], U[2], t[t['mcc'] == U[2]]['amount'].sum())
                 train_data_df[str(U[0]) + '_' + str(U[1])+ '_' + str(U[2])][I] = t[t['mcc'] == U[2]]['amount'].sum()
         train_data_df['sexid'][I] = users_list[I].sexid.unique()[0]
 
@@ -183,7 +402,9 @@ if __name__ == '__main__':
     y_train_full = train_data_df['sexid']
     X_train_full = train_data_df.drop('sexid', axis=1)
     
-    classifiers_evaluation(X_train_full, y_train_full)
+    draft_classifiers_evaluation(X_train_full, y_train_full)
+    
+    linear_SVC_tuning(X_train_full, y_train_full)
 
 #    X_train, X_test, y_train, y_test  =  train_test_split(
 #                                            X_train_full,
@@ -196,36 +417,35 @@ if __name__ == '__main__':
 #    model_0.fit(X_train, y_train)
 #    y_pred_forest_short = model_0.predict(X_test)
 #    print(classification_report(y_test, y_pred_forest_short))
-#    print(roc_auc_score(y_test, y_pred_forest_short))
-#
-#    param_grid = [
-#        {'n_estimators':[640, 660, 680, 700, 1000, 2000, 5000],
-#        'max_depth':[1, 2, 3, 4, 5, 10, 20],
-#        'bootstrap':[True, False],
-#        'max_features':['auto', 'sqrt'],
-#        'min_samples_split': [2, 5, 10, 20, 50],
-#        'min_samples_leaf': [1, 2, 3, 4, 5]
-#        }
-#    ]
-#    
-#    forest_class = RandomForestClassifier()
-#    
-#    grid_search = GridSearchCV(forest_class, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, verbose=2)
-#    
-#    grid_search.fit(X_train_full, y_train_full)
-#    
-#    forest_cls = grid_search.best_estimator_
-#    
-#    print('RandomForest best params', '\n', grid_search.best_params_)
-#    
-#    forest_cv_res = grid_search.cv_results_
-#    
-#    for mean_score, params in zip(forest_cv_res['mean_test_score'], forest_cv_res['params']):
-#        print(mean_score, params)        
+#    print(roc_auc_score(y_test, y_pred_forest_short))             
 ##            train_data_df[str(U[0]) + '_' + str(U[1])+ '_' + str(U[2])][I] = users_list[I][users_list[I]['ccy'] == U[0] and users_list[I]['tranccy'] == U[1] and users_list[I]['mcc'] == U[2]]['amount'].sum()
-#        
-#        
-#    
+        
+
+    param_grid = [
+        {'n_estimators':[100, 200, 300, 400, 500, 1000, 2000],
+        'max_depth':[1, 2, 3, 4, 5, 10, 20],
+        'bootstrap':[True, False],
+        'max_features':['auto', 'sqrt'],
+        'min_samples_split': [2, 3, 4, 5, 6, 7, 8, 9, 10],
+        'min_samples_leaf': [1, 2, 3, 4, 5]
+        }
+    ]
+    
+    forest_class = RandomForestClassifier()
+    
+    grid_search = GridSearchCV(forest_class, param_grid, cv=5, scoring='roc_auc', n_jobs=-1, verbose=2)
+    
+    grid_search.fit(X_train_full, y_train_full)
+    
+    forest_cls = grid_search.best_estimator_
+    
+    print('RandomForest best params', '\n', grid_search.best_params_)
+    
+    forest_cv_res = grid_search.cv_results_
+    
+    for mean_score, params in zip(forest_cv_res['mean_test_score'], forest_cv_res['params']):
+        print(mean_score, params)        
+    
     
 #    result_dict = dict([(key,{}) for key in ccy_tranccy_pairs])
 #    
