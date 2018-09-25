@@ -31,8 +31,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 
 FILE_NAME = 'train_ds.csv'
-#FILE_PATH = 'C:\\Users\\tom\\card_garbage\\Data\\'
-FILE_PATH = 'Data/'
+FILE_PATH = 'C:\\Users\\tom\\card_garbage\\Data\\'
+#FILE_PATH = 'Data/'
 TEST_FILE_NAME = 'test_ds.csv'
 CITIES_FILE_NAME = 'cities_list.csv'
 
@@ -523,6 +523,20 @@ def city_feature_creator(users_list, ccy_tranccy_pairs):
     return res
 
 
+def threshold_counter_1(result_dict):
+    count_list = [(key[0], key[1], key_0, value_0[1][0], value_0[1][1]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] != 0]
+    activities_counts = dict([((str(row[0]) + '_' + str(row[1]) + '_' + str(row[2])), row[4]) for row in count_list])
+    temp_frame = pd.DataFrame.from_dict(activities_counts, orient='index')
+    return temp_frame.quantile(q=0.9)
+
+
+def threshold_counter_0(result_dict):
+    count_list = [(key[0], key[1], key_0, value_0[0][0], value_0[0][1]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] != 0]
+    activities_counts = dict([((str(row[0]) + '_' + str(row[1]) + '_' + str(row[2])), row[4]) for row in count_list])
+    temp_frame = pd.DataFrame.from_dict(activities_counts, orient='index')
+    return temp_frame.quantile(q=0.9)
+
+
 def fullfill_frame(columns_list, users_list, total_columns_list):
     train_data_df = pd.DataFrame(columns=columns_list, index=range(len(users_list)))
     train_data_df['sexid'] = 0
@@ -775,44 +789,44 @@ if __name__ == '__main__':
     
     city_result_dict = city_feature_creator(users_list, ccy_tranccy_pairs)
     
-    city_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in city_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
-    city_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in city_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]
+    city_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in city_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > threshold_counter_1(city_result_dict)[0]]
+    city_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in city_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > threshold_counter_0(city_result_dict)[0]]
     city_total_columns_list = copy.deepcopy(city_1_list)
     city_total_columns_list.extend(city_0_list)
     city_columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in city_total_columns_list]))
     
-    country_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in country_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
-    country_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in country_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]
+    country_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in country_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > threshold_counter_1(country_result_dict)[0]]
+    country_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in country_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > threshold_counter_0(country_result_dict)[0]]
     country_total_columns_list = copy.deepcopy(country_1_list)
     country_total_columns_list.extend(country_0_list)
     country_columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in country_total_columns_list]))
     
-    hour_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in hour_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
-    hour_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in hour_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]
+    hour_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in hour_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > threshold_counter_1(hour_result_dict)[0]]
+    hour_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in hour_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > threshold_counter_0(hour_result_dict)[0]]
     hour_total_columns_list = copy.deepcopy(hour_1_list)
     hour_total_columns_list.extend(hour_0_list)
     hour_columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in hour_total_columns_list]))
     
-    day_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in day_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
-    day_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in day_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]
+    day_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in day_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > threshold_counter_1(day_result_dict)[0]]
+    day_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in day_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > threshold_counter_0(day_result_dict)[0]]
     day_total_columns_list = copy.deepcopy(day_1_list)
     day_total_columns_list.extend(day_0_list)
     day_columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in day_total_columns_list]))
 
-    month_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in month_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
-    month_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in month_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]
+    month_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in month_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > threshold_counter_1(month_result_dict)[0]]
+    month_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in month_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > threshold_counter_0(month_result_dict)[0]]
     month_total_columns_list = copy.deepcopy(month_1_list)
     month_total_columns_list.extend(month_0_list)
     month_columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in month_total_columns_list]))
     
-    year_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in year_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
-    year_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in year_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]
+    year_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in year_result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > threshold_counter_1(year_result_dict)[0]]
+    year_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in year_result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > threshold_counter_0(year_result_dict)[0]]
     year_total_columns_list = copy.deepcopy(year_1_list)
     year_total_columns_list.extend(year_0_list)
     year_columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in year_total_columns_list]))
     
-    sexid_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > 10]
-    sexid_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > 10]    
+    sexid_1_list = [(key[0], key[1], key_0, value_0[1][0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[1][0] != 0 and value_0[1][1] > threshold_counter_1(result_dict)[0]]
+    sexid_0_list = [(key[0], key[1], key_0, value_0[0][0]) for key, value in result_dict.items() for key_0, value_0 in value.items() if value_0[0][0] != 0 and value_0[0][1] > threshold_counter_0(result_dict)[0]]    
     total_columns_list = copy.deepcopy(sexid_1_list)
     total_columns_list.extend(sexid_0_list)       
     columns_list = list(set([str(I[0]) + '_' + str(I[1])+ '_' + str(I[2]) for I in total_columns_list]))
