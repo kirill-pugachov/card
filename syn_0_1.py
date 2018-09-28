@@ -68,8 +68,29 @@ def process_data(df):
                 for month in month_list:
                     temp_month = temp_year.loc[temp_year['month'] == month]
                     if not temp_month.empty:
-                        res_list.append(temp_month)
+                        day_list = dict(temp_month.day.value_counts())
+                        for day in day_list:
+                            temp_day = temp_month.loc[temp_month['day'] == day]
+                            if not temp_day.empty:
+                                res_list.append(temp_day)
     return res_list
+
+#
+#def process_data(df):
+#    res_list = list()
+#    id_list = dict(df.clientid.value_counts())
+#    for client_id in id_list:
+#        temp = df.loc[df['clientid'] == client_id]
+#        year_list = dict(df.year.value_counts())
+#        for year in year_list:
+#            temp_year = temp.loc[temp['year'] == year]
+#            if not temp_year.empty:
+#                month_list = dict(temp_year.month.value_counts())
+#                for month in month_list:
+#                    temp_month = temp_year.loc[temp_year['month'] == month]
+#                    if not temp_month.empty:
+#                        res_list.append(temp_month)
+#    return res_list
 
 
 country_dict = {'GE': ['GE', 'GEGE'],
@@ -588,6 +609,7 @@ def month_fullfill_frame(train_data_df, columns_list, users_list, total_columns_
         
     train_data_df.fillna(0, inplace=True)
     return train_data_df
+
 
 def year_fullfill_frame(train_data_df, columns_list, users_list, total_columns_list):
     
