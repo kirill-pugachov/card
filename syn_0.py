@@ -7,6 +7,7 @@ Created on Thu Aug 16 21:27:06 2018
 
 
 import pandas as pd
+import numpy as np
 #import time
 import datetime
 import csv
@@ -32,9 +33,10 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
 
 FILE_NAME = 'train_ds.csv'
-FILE_PATH = 'C:\\Users\\tom\\card_garbage\\Data\\'
+#FILE_PATH = 'C:\\Users\\tom\\card_garbage\\Data\\'
 TEST_FILE_NAME = 'test_ds.csv'
 CITIES_FILE_NAME = 'cities_list.csv'
+FILE_PATH = 'Data/'
 
 
 def get_mcc_coding_list():
@@ -584,7 +586,7 @@ def linear_SVC_tuning(X_train, y_train):
         'dual':[True, False],
         'max_iter': [1000, 2000, 5000, 10000],
         'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000],
-        'loss':['hinge','squared_hinge']
+        'loss':['squared_hinge']
         }
     ]
     
@@ -936,6 +938,10 @@ if __name__ == '__main__':
     
     y_train = train_data['sexid']
     X_train = train_data.drop('sexid', axis=1)
+    
+    
+    X_train_full = X_train.apply(np.log)
+    X_train_full[np.isneginf(X_train_full)] = 0
 
 
     rand_for = random_forest_tuning(X_train, y_train)

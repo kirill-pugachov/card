@@ -827,10 +827,6 @@ if __name__ == '__main__':
     
     train_data_df = year_fullfill_frame(train_data_df, year_columns_list, users_list, year_total_columns_list)
     
-    train_data_df = country_fullfill_frame(train_data_df, country_columns_list, users_list, country_total_columns_list)
-    
-    train_data_df = city_fullfill_frame(train_data_df, city_columns_list, users_list, city_total_columns_list)
-    
     y_train_full = train_data_df['sexid']
     X_train_full = train_data_df.drop('sexid', axis=1)
     
@@ -840,6 +836,20 @@ if __name__ == '__main__':
     X_train_full[np.isneginf(X_train_full)] = 0
     
     np_log_res_classifiers_selection = classifiers_evaluation(X_train_full, y_train_full)
+    
+#    train_data_df = country_fullfill_frame(train_data_df, country_columns_list, users_list, country_total_columns_list)
+#    
+#    train_data_df = city_fullfill_frame(train_data_df, city_columns_list, users_list, city_total_columns_list)
+    
+#    y_train_full = train_data_df['sexid']
+#    X_train_full = train_data_df.drop('sexid', axis=1)
+#    
+#    res_classifiers_selection = classifiers_evaluation(X_train_full, y_train_full)
+#    
+#    X_train_full = X_train_full.apply(np.log)
+#    X_train_full[np.isneginf(X_train_full)] = 0
+#    
+#    np_log_res_classifiers_selection = classifiers_evaluation(X_train_full, y_train_full)
     
 #    scores = select_preprocess(X_train_full, y_train_full)
 #    
