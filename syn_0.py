@@ -946,15 +946,98 @@ if __name__ == '__main__':
 
     rand_for = random_forest_tuning(X_train, y_train)
     lin_svc = linear_SVC_tuning(X_train, y_train)
-
-
-### оценка классификаторв с преобработкой данных и без
-######
-######
-    classifiers_evaluation(X_train, y_train)
-    print('\n', 'Clear evaluation without data preprocessing', '\n')
-    draft_classifiers_evaluation(X_train, y_train)
     
+    X_train_full = X_train.apply(np.log)
+    X_train_full[np.isneginf(X_train_full)] = 0
+    
+    rand_for = random_forest_tuning(X_train_full, y_train)
+    lin_svc = linear_SVC_tuning(X_train_full, y_train)
+    
+#    from keras import losses
+#    from keras import metrics
+#    from keras import models
+#    from keras import layers
+    from keras import regularizers
+#    from keras import optimizers
+    from sklearn.preprocessing import MinMaxScaler
+
+
+    from keras.models import Sequential
+    from keras.layers import Dense, Dropout
+    from keras.optimizers import SGD
+    
+    model = Sequential()
+    model.add(Dense(128, input_dim=1492, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.009)))
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid'))
+    
+    sgd = SGD(lr=0.00015, decay=1e-6, momentum=0.9, nesterov=True)
+    
+    model.compile(loss='binary_crossentropy',
+                  optimizer=sgd,
+#                  optimizer='rmsprop',
+                  metrics=['accuracy'])
+    
+#    model = models.Sequential()
+##    model.add(layers.Dense(1492, activation='relu', kernel_regularizer=regularizers.l2(0.25), input_shape=(1492,)))
+#    model.add(layers.Dense(8, activation='relu'))
+#    model.add(layers.Dense(6, activation='relu'))
+#    model.add(layers.Dense(4, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+##    model.add(layers.Dense(50, activation='relu'))
+#    model.add(layers.Dense(1, activation='sigmoid'))
+#    model.compile(optimizer='rmsprop',
+#                  loss='binary_crossentropy',
+#                  metrics=['accuracy'])
+    
+#    x_val = X_train[:1000].values
+#    partial_x_train = X_train[1000:].values
+#    
+#    y_val = y_train[:1000].values
+#    partial_y_train = y_train[1000:].values
+    
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    X_train_min = scaler.fit_transform(X_train_full)
+    
+    x_val = X_train_min[:1000]
+    partial_x_train = X_train_min[1000:]
+    
+    y_val = y_train[:1000].values
+    partial_y_train = y_train[1000:].values
+    
+
+#    x_val = X_train_full[:1000].values
+#    partial_x_train = X_train_full[1000:].values
+#    
+#    y_val = y_train[:1000].values
+#    partial_y_train = y_train[1000:].values
+    
+    history = model.fit(partial_x_train,
+                    partial_y_train,
+                    epochs=150,
+                    batch_size=32,
+                    validation_data=(x_val, y_val))
+    
+
+#### оценка классификаторв с преобработкой данных и без
+#######
+#######
+#    classifiers_evaluation(X_train, y_train)
+#    print('\n', 'Clear evaluation without data preprocessing', '\n')
+#    draft_classifiers_evaluation(X_train, y_train)
+
+
+
+
 #    X_train, X_test, y_train, y_test  =  train_test_split(
 #                                            X_train,
 #                                            y_train,
