@@ -27,13 +27,16 @@ X_FILE_NAME = 'new_dataframe_1.csv'
 
 
 # define baseline model
-def baseline_model(optimizer='adam'):
+def baseline_model(optimizer='RMSprop'):
     model = Sequential()
-    model.add(Dense(32, input_dim=268, activation='relu'))
+    model.add(Dense(64, input_dim=268, kernel_initializer='glorot_uniform', activation='relu'))
+#    model.add(Dense(96, input_dim=(268,), kernel_initializer='glorot_uniform', activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(16, activation='relu', kernel_regularizer=regularizers.l2(0.009)))
-    model.add(Dropout(0.5))
-    model.add(Dense(1, activation='sigmoid'))
+#    model.add(Dense(64, activation='relu', kernel_initializer='glorot_uniform', kernel_regularizer=regularizers.l2(0.005)))
+#    model.add(Dropout(0.5))
+#    model.add(Dense(16, activation='relu', kernel_initializer='glorot_uniform', kernel_regularizer=regularizers.l2(0.005)))
+#    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid', kernel_initializer='glorot_uniform'))
     model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     return model
 
@@ -44,49 +47,54 @@ if __name__ == '__main__':
 #    train_data = np.genfromtxt(FILE_PATH + X_FILE_NAME, delimiter=",")[1:]
 #    train_labels = np.genfromtxt(FILE_PATH + Y_FILE_NAME, delimiter=",")[1:]
     
-    X_train_full = pd.read_csv(FILE_PATH + X_FILE_NAME)
+    X_train_full = pd.read_csv(FILE_PATH + X_FILE_NAME, index_col=0)
     y_train = X_train_full['sexid']
+#    y_train = y_train * 0.99
     
-    X_train_full.drop(['Unnamed: 0'], axis=1, inplace=True)
+#    X_train_full.drop(['Unnamed: 0'], axis=1, inplace=True)
     X_train_full.drop(['sexid'], axis=1, inplace=True)
+#    X_train_full = X_train_full / 100000
+#    X_train_full = X_train_full + 0.000001
 #    y_train.drop([0], axis=1, inplace=True)
     
-#    X_train_full_norm = X_train_full.div(X_train_full.sum(axis=1), axis=0)
+##    X_train_full_norm = X_train_full.div(X_train_full.sum(axis=1), axis=0)
+#    
+#    X_train_full = X_train_full.apply(np.log)
+#    X_train_full[np.isneginf(X_train_full)] = 0
     
-    X_train_full = X_train_full.apply(np.log)
-    X_train_full[np.isneginf(X_train_full)] = 0
+##    norm = preprocessing.Normalizer()
+#    norm = preprocessing.StandardScaler()
+#    X_train_full_norm = norm.fit_transform(X_train_full)
     
-    norm = preprocessing.Normalizer()
-    X_train_full_norm = norm.fit_transform(X_train_full)
+    dataset = X_train_full.values
+#    dataset = X_train_full_norm
     
-#    dataset = X_train_full_norm.values
-    dataset = X_train_full_norm
-    
-    X = dataset[:,0:268].astype(float)
+    X_prom = dataset[:,0:268].astype(float)
+    X = X_prom / (X_prom.max() + 1)
     y = y_train.values
     
-    estimator = KerasClassifier(build_fn=baseline_model, epochs=200, batch_size=10, verbose=0)
+    estimator = KerasClassifier(build_fn=baseline_model, epochs=50, batch_size=64, verbose=0)
     
     kfold = KFold(n_splits=10, shuffle=True, random_state=42)
     
     results = cross_val_score(estimator, X, y, cv=kfold)
     print("Baseline: %.2f%% (%.2f%%)" % (results.mean()*100, results.std()*100))
     
-    model = KerasClassifier(build_fn=baseline_model, epochs=200, batch_size=10, verbose=0)
-    
-    optimizer = ['SGD', 'RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam']
-    param_grid = dict(optimizer=optimizer)
-    
-    grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1)
-    grid_result = grid.fit(X, y)
-    
-    # summarize results
-    print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
-    means = grid_result.cv_results_['mean_test_score']
-    stds = grid_result.cv_results_['std_test_score']
-    params = grid_result.cv_results_['params']
-    for mean, stdev, param in zip(means, stds, params):
-        print("%f (%f) with: %r" % (mean, stdev, param))
+#    model = KerasClassifier(build_fn=baseline_model, epochs=200, batch_size=10, verbose=0)
+#    
+#    optimizer = ['SGD', 'RMSprop', 'Adagrad', 'Adadelta', 'Adam', 'Adamax', 'Nadam']
+#    param_grid = dict(optimizer=optimizer)
+#    
+#    grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1)
+#    grid_result = grid.fit(X, y)
+#    
+#    # summarize results
+#    print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+#    means = grid_result.cv_results_['mean_test_score']
+#    stds = grid_result.cv_results_['std_test_score']
+#    params = grid_result.cv_results_['params']
+#    for mean, stdev, param in zip(means, stds, params):
+#        print("%f (%f) with: %r" % (mean, stdev, param))
     
 
 #    scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
